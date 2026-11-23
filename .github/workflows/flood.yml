@@ -38,7 +38,11 @@ jobs:
           node-version: 22
       - name: mix
         if: inputs.mode == 'mix'
-        run: ulimit -n 65535; node mix.js ${{ inputs.host }} ${{ inputs.port }} ${{ inputs.rate }} ${{ matrix.shard % 2 == 0 && 774 || 47 }}
+        run: |
+          if [ $(( ${{ matrix.shard }} % 2 )) -eq 0 ]; then PROTO=774; else PROTO=47; fi
+          echo "shard ${{ matrix.shard }} using protocol $PROTO"
+          ulimit -n 65535
+          node mix.js ${{ inputs.host }} ${{ inputs.port }} ${{ inputs.rate }} "$PROTO"
       - name: hold
         if: inputs.mode == 'hold'
         run: ulimit -n 65535; node loginflood.js ${{ inputs.host }} ${{ inputs.port }} ${{ inputs.conc }}
